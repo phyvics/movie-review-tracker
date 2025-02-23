@@ -12,10 +12,10 @@ Welcome to **Movie Review Tracker**, a sleek, dark-themed web application design
 
 ## Screenshots
 
-![Form Section](screenshots/img-1.png)  
+![Form Section](screenshots/img-2.png)  
 *The "Fetch & Add Review" form where you input IMDb IDs and review details.*
 
-![Movie List Section](screenshots/img-2.png)  
+![Movie List Section](screenshots/img-1.png)  
 *The "Your Reviews" section displaying your movie reviews with ratings and actions.*
 
 ## Prerequisites
@@ -27,5 +27,5 @@ Welcome to **Movie Review Tracker**, a sleek, dark-themed web application design
 
 1. **Clone or Download**
    ```bash
-   git clone https://github.com/yourusername/movie-review-tracker.git
+   git clone https://github.com/phyvics/movie-review-tracker.git
    cd movie-review-tracker
