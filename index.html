@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Review Tracker</title>
+  <!-- Google Fonts & Material Icons -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    /* [Styles remain unchanged, keeping your dark Material Design theme intact] */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      background-color: #121212;
+      color: #e0e0e0; 
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      /* No longer hidden by default */
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .card {
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; }
+    input[type="text"], input[type="number"], input[type="date"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-bottom: 2px solid #424242;
+      background: transparent;
+      color: #e0e0e0;
+      font-size: 16px;
+      outline: none;
+      transition: border-bottom 0.3s;
+      background-color: #2a2a2a;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, textarea:focus {
+      border-bottom: 2px solid #90caf9;
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    .button {
+      display: inline-block;
+      background-color: #90caf9;
+      color: #121212;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+      text-decoration: none;
+    }
+    .button:hover { background-color: #64b5f6; }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; }
+    .col-half { flex: 1 1 45%; }
+    /* Fixed space for poster preview (gray background when empty) */
+    .poster-preview {
+      width: 200px;
+      height: 300px;
+      background-color: #2a2a2a;
+      border-radius: 5px;
+      object-fit: cover;
+      margin-top: 10px;
+    }
+    /* Remove spinners for number inputs using standard appearance */
+    input[type=number] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    /* Review Card Styles */
+    .review-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #1e1e1e;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .review-card:hover { background-color: #2a2a2a; }
+    .review-info { flex: 1; }
+    .review-info h3 { margin: 0; font-size: 18px; font-weight: 500; }
+    .review-info p { margin: 5px 0; font-size: 14px; color: #b0bec5; display: flex; align-items: center; }
+    .flag { margin-right: 8px; }
+    .rating-badge {
+      font-size: 24px;
+      font-weight: bold;
+      margin-right: 20px;
+      min-width: 40px;
+      text-align: center;
+    }
+    .review-actions button {
+      background: none;
+      border: none;
+      color: #90caf9;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 18px;
+    }
+    .review-details {
+      background-color: #2a2a2a;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    /* Toast Notification */
+    .toast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      bottom: 30px;
+      font-size: 14px;
+    }
+    .toast.show {
+      visibility: visible;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @keyframes fadein {
+      from {bottom: 0; opacity: 0;}
+      to {bottom: 30px; opacity: 1;}
+    }
+    @keyframes fadeout {
+      from {bottom: 30px; opacity: 1;}
+      to {bottom: 0; opacity: 0;}
+    }
+    /* Simple Login Modal */
+    #loginModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #121212;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #loginModal div {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    #loginModal input {
+      width: 200px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainContent">
+    <h1>Movie Review Tracker</h1>
+    
+    <!-- Fetch & Review Form Card -->
+    <div class="card">
+      <h2>Fetch & Add Review</h2>
+      <!-- Fetch Movie Data -->
+      <div class="form-group">
+        <label for="imdbID">IMDb ID:</label>
+        <div class="row">
+          <div class="col-half">
+            <input type="text" id="imdbID" placeholder="e.g., tt1375666">
+          </div>
+          <div class="col-half" style="display:flex; align-items: flex-end;">
+            <button class="button" onclick="fetchMovieData()">Fetch Data</button>
+          </div>
+        </div>
+      </div>
+      <!-- Movie Data Fields -->
+      <div class="row">
+        <div class="col-half">
+          <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" placeholder="Movie Title">
+          </div>
+          <div class="form-group">
+            <label for="year">Year:</label>
+            <input type="text" id="year" placeholder="Release Year">
+          </div>
+          <div class="form-group">
+            <label for="genre">Genre(s):</label>
+            <input type="text" id="genre" placeholder="Genre(s)">
+          </div>
+          <div class="form-group">
+            <label for="country">Country:</label>
+            <input type="text" id="country" placeholder="Country">
+          </div>
+          <div class="form-group">
+            <label for="language">Language:</label>
+            <input type="text" id="language" placeholder="Language">
+          </div>
+          <div class="form-group">
+            <label for="runtime">Runtime:</label>
+            <input type="text" id="runtime" placeholder="Runtime">
+          </div>
+        </div>
+        <div class="col-half">
+          <div class="form-group">
+            <label for="poster">Poster:</label>
+            <img id="posterPreview" class="poster-preview" src="https://placehold.co/200x300/2a2a2a/2a2a2a">
+          </div>
+          <div class="form-group">
+            <label for="watchDate">Watch Date (DD/MM/YYYY):</label>
+            <input type="date" id="watchDate">
+          </div>
+          <div class="form-group">
+            <label for="rating">Rating (0-100):</label>
+            <input type="number" id="rating" min="0" max="100" placeholder="e.g., 85">
+          </div>
+          <div class="form-group">
+            <label for="reviewText">Review:</label>
+            <textarea id="reviewText" placeholder="Your review here..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <button class="button" onclick="addReview()">Upload Review</button>
+      </div>
+      <div style="margin-top:10px; text-align:right;">
+        <button class="button" onclick="downloadCSV()">Download CSV</button>
+      </div>
+    </div>
+    
+    <!-- Reviews Display Card -->
+    <div class="card">
+      <h2>Your Reviews</h2>
+      <div id="reviews"></div>
+    </div>
+  </div>
+  
+  <div id="toast" class="toast"></div>
+  
+  <script>
+    let reviews = [];
+    let editingId = null;
+
+    // Load reviews immediately on page load
+    window.onload = function() {
+      loadReviews();
+    };
+
+    // Mapping of common country names to flag emojis
+    const countryFlags = {
+        "Argentina": "🇦🇷",
+        "Australia": "🇦🇺",
+        "Belgium": "🇧🇪",
+        "Brazil": "🇧🇷",
+        "Canada": "🇨🇦",
+        "Chile": "🇨🇱",
+        "China": "🇨🇳",
+        "Colombia": "🇨🇴",
+        "Czech Republic": "🇨🇿",
+        "Czechoslovakia": "🇨🇿", // Using Czech flag as a historical approximation
+        "Denmark": "🇩🇰",
+        "Estonia": "🇪🇪",
+        "Finland": "🇫🇮",
+        "France": "🇫🇷",
+        "Germany": "🇩🇪",
+        "Hong Kong": "🇭🇰",
+        "Hungary": "🇭🇺",
+        "India": "🇮🇳",
+        "Indonesia": "🇮🇩",
+        "Iran": "🇮🇷",
+        "Ireland": "🇮🇪",
+        "Italy": "🇮🇹",
+        "Japan": "🇯🇵",
+        "Lebanon": "🇱🇧",
+        "Mexico": "🇲🇽",
+        "Netherlands": "🇳🇱",
+        "Norway": "🇳🇴",
+        "Philippines": "🇵🇭",
+        "Poland": "🇵🇱",
+        "Russia": "🇷🇺",
+        "Singapore": "🇸🇬",
+        "South Africa": "🇿🇦",
+        "South Korea": "🇰🇷",
+        "Spain": "🇪🇸",
+        "Sweden": "🇸🇪",
+        "Syria": "🇸🇾",
+        "Turkey": "🇹🇷",
+        "Ukraine": "🇺🇦",
+        "United Kingdom": "🇬🇧",
+        "UK": "🇬🇧", // Alias for United Kingdom
+        "United States": "🇺🇸",
+        "USA": "🇺🇸", // Alias for United States
+        "Venezuela": "🇻🇪",
+        "Vietnam": "🇻🇳"
+        };
+    
+    function getCountryFlag(countryStr) {
+      if (!countryStr) return '';
+      let country = countryStr.split(',')[0].trim();
+      return countryFlags[country] || country;
+    }
+    
+    function getRatingColor(rating) {
+      let num = Number(rating);
+      if(isNaN(num)) return '#e0e0e0';
+      if(num < 20) return '#e57373';       // red
+      else if(num < 40) return '#ff8a65';   // orange
+      else if(num < 60) return '#fff176';   // yellow
+      else if(num < 80) return '#aed581';   // yellowish green
+      else return '#81c784';               // green
+    }
+    
+    function formatDate(dateStr) {
+      const parts = dateStr.split('-');
+      if(parts.length === 3) {
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+      }
+      return dateStr;
+    }
+    
+    // API key will be injected from config.js
+    function fetchMovieData() {
+      const imdbID = document.getElementById('imdbID').value.trim();
+      if (!imdbID) {
+        showToast('Please enter an IMDb ID.');
+        return;
+      }
+      fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.Response === "False") {
+            showToast(data.Error);
+          } else {
+            document.getElementById('title').value = data.Title || '';
+            document.getElementById('year').value = data.Year || '';
+            document.getElementById('genre').value = data.Genre || '';
+            document.getElementById('country').value = data.Country || '';
+            document.getElementById('language').value = data.Language || '';
+            document.getElementById('runtime').value = data.Runtime || '';
+            if(data.Poster && data.Poster !== "N/A") {
+              document.getElementById('posterPreview').src = data.Poster;
+            } else {
+              document.getElementById('posterPreview').src = "https://placehold.co/200x300/2a2a2a/2a2a2a";
+            }
+            document.getElementById('watchDate').focus();
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          showToast('Error fetching movie data.');
+        });
+    }
+    
+    function addReview() {
+      const title = document.getElementById('title').value.trim();
+      const year = document.getElementById('year').value.trim();
+      const genre = document.getElementById('genre').value.trim();
+      const country = document.getElementById('country').value.trim();
+      const language = document.getElementById('language').value.trim();
+      const runtime = document.getElementById('runtime').value.trim();
+      const watchDate = document.getElementById('watchDate').value;
+      const rating = document.getElementById('rating').value;
+      const reviewText = document.getElementById('reviewText').value.trim();
+      const poster = document.getElementById('posterPreview').src || '';
+      
+      if (!title || !year || !watchDate || !rating || !reviewText) {
+        showToast('Please fill in all required fields.');
+        return;
+      }
+      
+      if (editingId) {
+        reviews = reviews.map(r => {
+          if (r.id === editingId) {
+            return { ...r, title, year, genre, country, language, runtime, watchDate, rating, reviewText, poster };
+          }
+          return r;
+        });
+        editingId = null;
+      } else {
+        const newReview = {
+          id: Date.now(),
+          title,
+          year,
+          genre,
+          country,
+          language,
+          runtime,
+          watchDate,
+          rating,
+          reviewText,
+          poster
+        };
+        reviews.push(newReview);
+      }
+      
+      localStorage.setItem('reviews', JSON.stringify(reviews));
+      displayReviews();
+      clearForm();
+      updateCSVFile();
+      showToast('Review saved.');
+    }
+    
+    function clearForm() {
+      document.getElementById('imdbID').value = '';
+      document.getElementById('title').value = '';
+      document.getElementById('year').value = '';
+      document.getElementById('genre').value = '';
+      document.getElementById('country').value = '';
+      document.getElementById('language').value = '';
+      document.getElementById('runtime').value = '';
+      document.getElementById('watchDate').value = '';
+      document.getElementById('rating').value = '';
+      document.getElementById('reviewText').value = '';
+      // Reset poster preview to fixed gray placeholder
+      document.getElementById('posterPreview').src = "https://placehold.co/200x300/2a2a2a/2a2a2a";
+    }
+    
+    function displayReviews() {
+      const reviewsContainer = document.getElementById('reviews');
+      reviewsContainer.innerHTML = '';
+      reviews.forEach(review => {
+        const card = document.createElement('div');
+        card.className = 'review-card';
+        card.innerHTML = `
+          <div class="review-info">
+            <h3>${review.title} (${review.year})</h3>
+            <p>
+              <span class="flag">${getCountryFlag(review.country)}</span>
+              <span class="genres">${review.genre}</span>
+            </p>
+          </div>
+          <div class="rating-badge" style="color: ${getRatingColor(review.rating)};">${review.rating}</div>
+          <div class="review-actions">
+            <button onclick="initEdit(${review.id})" title="Edit Review"><i class="material-icons">edit</i></button>
+            <button onclick="removeReview(${review.id})" title="Remove Review"><i class="material-icons">delete</i></button>
+          </div>
+        `;
+        const details = document.createElement('div');
+        details.className = 'review-details';
+        details.innerHTML = `
+          <div><strong>Watch Date:</strong> ${formatDate(review.watchDate)}</div>
+          <div><strong>Rating:</strong> ${review.rating}</div>
+          <div><strong>Review:</strong> ${review.reviewText}</div>
+        `;
+        card.appendChild(details);
+        card.addEventListener('click', (e) => {
+          if(e.target.tagName.toLowerCase() !== 'button' && !e.target.closest('.review-actions')){
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+          }
+        });
+        reviewsContainer.appendChild(card);
+      });
+    }
+    
+    function initEdit(id) {
+      const review = reviews.find(r => r.id === id);
+      if (!review) return;
+      editingId = id;
+      document.getElementById('title').value = review.title;
+      document.getElementById('year').value = review.year;
+      document.getElementById('genre').value = review.genre;
+      document.getElementById('country').value = review.country;
+      document.getElementById('language').value = review.language;
+      document.getElementById('runtime').value = review.runtime;
+      document.getElementById('watchDate').value = review.watchDate;
+      document.getElementById('rating').value = review.rating;
+      document.getElementById('reviewText').value = review.reviewText;
+      if(review.poster) {
+        document.getElementById('posterPreview').src = review.poster;
+      } else {
+        document.getElementById('posterPreview').src = "https://placehold.co/200x300/2a2a2a/2a2a2a";
+      }
+      showToast('Editing review. Make changes and upload.');
+    }
+    
+    function removeReview(id) {
+      reviews = reviews.filter(r => r.id !== id);
+      localStorage.setItem('reviews', JSON.stringify(reviews));
+      displayReviews();
+      updateCSVFile();
+      showToast('Review removed.');
+    }
+
+    function updateCSVFile() {
+      const header = ['Title', 'Year', 'Genre', 'Country', 'Language', 'Runtime', 'Watch Date', 'Rating', 'Review', 'Poster'];
+      const csvRows = [];
+      csvRows.push(header.join(','));
+      reviews.forEach(r => {
+        const row = [
+          `"${r.title}"`,
+          `"${r.year}"`,
+          `"${r.genre}"`,
+          `"${r.country}"`,
+          `"${r.language}"`,
+          `"${r.runtime}"`,
+          `"${formatDate(r.watchDate)}"`,
+          `"${r.rating}"`,
+          `"${r.reviewText.replace(/"/g, '""')}"`,
+          `"${r.poster}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+      const csvString = csvRows.join('\n');
+      fetch('save_csv.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: csvString })
+      })
+      .then(response => response.text())
+      .then(result => {
+        console.log('CSV updated:', result);
+      })
+      .catch(error => {
+        console.error('Error updating CSV:', error);
+      });
+    }
+    
+    function downloadCSV() {
+      if(reviews.length === 0) {
+        showToast('No reviews to download.');
+        return;
+      }
+      const header = ['Title', 'Year', 'Genre', 'Country', 'Language', 'Runtime', 'Watch Date', 'Rating', 'Review', 'Poster'];
+      const csvRows = [];
+      csvRows.push(header.join(','));
+      reviews.forEach(r => {
+        const row = [
+          `"${r.title}"`,
+          `"${r.year}"`,
+          `"${r.genre}"`,
+          `"${r.country}"`,
+          `"${r.language}"`,
+          `"${r.runtime}"`,
+          `"${formatDate(r.watchDate)}"`,
+          `"${r.rating}"`,
+          `"${r.reviewText.replace(/"/g, '""')}"`,
+          `"${r.poster}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'movie_reviews.csv');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show';
+      setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+    }
+    
+    // Parses CSV data into an array of review objects
+    function parseCSV(csvString) {
+      const lines = csvString.split('\n').filter(line => line.trim() !== '');
+      if(lines.length < 2) return [];
+      const reviewsArray = [];
+      // Skip header row (assumed order: Title,Year,Genre,Country,Language,Runtime,Watch Date,Rating,Review,Poster)
+      for(let i = 1; i < lines.length; i++){
+        const fields = lines[i].match(/("([^"]|"")*"|[^,]+)(?=,|$)/g);
+        if(fields) {
+          const values = fields.map(f => {
+            let value = f.trim();
+            if(value.startsWith('"') && value.endsWith('"')){
+              value = value.substring(1, value.length - 1).replace(/""/g, '"');
+            }
+            return value;
+          });
+          if(values.length < 10) continue;
+          reviewsArray.push({
+            id: Date.now() + i, // Generate an id (note: this is not persistent across reloads)
+            title: values[0],
+            year: values[1],
+            genre: values[2],
+            country: values[3],
+            language: values[4],
+            runtime: values[5],
+            watchDate: values[6],
+            rating: values[7],
+            reviewText: values[8],
+            poster: values[9]
+          });
+        }
+      }
+      return reviewsArray;
+    }
+    
+    // Loads reviews from movie_reviews.csv and displays them.
+    function loadReviews() {
+      fetch('movie_reviews.csv')
+        .then(response => {
+          if(response.ok) return response.text();
+          else return "";
+        })
+        .then(csvData => {
+          if(csvData) {
+            reviews = parseCSV(csvData);
+            localStorage.setItem('reviews', JSON.stringify(reviews));
+          } else {
+            reviews = JSON.parse(localStorage.getItem('reviews')) || [];
+          }
+          displayReviews();
+        })
+        .catch(error => {
+          console.error("Error loading CSV: ", error);
+          reviews = JSON.parse(localStorage.getItem('reviews')) || [];
+          displayReviews();
+        });
+    }
+  </script>
+  <script src="config.js"></script>
+</body>
+</html>
